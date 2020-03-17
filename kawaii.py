@@ -10,7 +10,6 @@ nose = [28, 36]
 r_eye, l_eye = [37, 42], [43, 48]
 mouth = [49, 68]
 
-scale = 10
 padding = 10
 x_offset = y_offset = 10
 
@@ -23,20 +22,31 @@ camera = cv2.VideoCapture(0)
 
 
 def create_bigger_eye(frame, mask, rang, right=False):
+    mask = np.zeros(frame.shape, frame.dtype)
+
+    scale = 1.3
+    # get the eye
     (xx, yy, w, h) = cv2.boundingRect(np.array([rang]))
-
     roi = frame[yy-padding:yy+padding + h, xx-padding:xx+padding + w]
-    mask = mask[yy-padding:yy+padding + h, xx-padding:xx+padding + w]
-    bigger_eye = cv2.resize(roi, (int(roi.shape[1]*1.2), int(roi.shape[0]*1.2)))
-    mask = cv2.resize(mask, (int(mask.shape[1]*1.2), int(mask.shape[0]*1.2)))
+    bigger_eye = cv2.resize(roi, (int(roi.shape[1]*scale), int(roi.shape[0]*scale)))
+    
+    x1 = yy-padding
+    x2 = yy+padding + h
+    y1 = xx-padding
+    y2 = xx+padding + w
 
-    b_e_pos_y = int(y - 1.5*padding)
-    b_e_pos_x = x - padding
+    # rectangle ver
+    mask[x1:x2, y1:y2] = (255, 255, 255)
+    
+    center_y = int((x2 + x1) / 2)
+    center_x = int((y2 + y1) / 2)
 
-    if right == True:
-        b_e_pos_x -= padding
+    # ellipse ver
+    # mask = cv2.ellipse(mask, (center_x, center_y), (int(w*scale), int(h*scale)), 0, 0, 360, (255, 255, 255), -1)
 
-    return bigger_eye, mask, b_e_pos_y, b_e_pos_x
+    frame[x1:x1 + bigger_eye.shape[0], y1:y1+bigger_eye.shape[1]] = bigger_eye 
+
+    return frame, mask, center_y, center_x
 
 
 
@@ -45,18 +55,9 @@ def blur_edges(src, dest, mask, center):
     return out
 
 
-def prepare_mask(img, rang):
-    src_mask = np.zeros(img.shape, img.dtype)
-    poly = np.array(rang, np.int32)
-    cv2.fillPoly(src_mask, [poly], (255, 255, 255))
-    return src_mask
-
-
-
 while True:
     ret, frame = camera.read()
     frame = cv2.flip(frame, 1)
-    org_frame = frame.copy()
     frame_2 = frame.copy()
     mask = 0
 
@@ -69,25 +70,16 @@ while True:
 
         i, j = l_eye[0], l_eye[1]
 
-        for (x, y) in shape[i:j]:
-            # print(shape[i:j])
-            mask = prepare_mask(frame, shape[i:j])
-            bigger_eye, mask, a, b = create_bigger_eye(frame, mask, shape[i:j])
-            
-        # frame[a:a + bigger_eye.shape[0], b:b+bigger_eye.shape[1]] = bigger_eye
-        frame_2 = blur_edges(bigger_eye, frame, mask, (b, a))
+        frame, mask, a, b = create_bigger_eye(frame, mask, shape[i:j])
+        frame_2 = blur_edges(frame, frame_2, mask, (b, a))
 
         i, j = r_eye[0], r_eye[1]
 
-        # for (x, y) in shape[i:j]:
-        #     bigger_eye, mask, a, b = create_bigger_eye(frame, mask, shape[i:j], True)
-        
-        # frame[a:a + bigger_eye.shape[0], b:b+bigger_eye.shape[1]] = bigger_eye
+        bigger_eye, mask, a, b = create_bigger_eye(frame, mask, shape[i:j], True)
+        frame_2 = blur_edges(frame, frame_2, mask, (b, a))
 
     cv2.imshow('frame', frame_2)
     cv2.imshow("mask.jpg", mask)
-    cv2.imshow("frame1.jpg", bigger_eye)
-    # cv2.imwrite("frame2.jpg", frame_2)
     
 
     if cv2.waitKey(20) & 0xFF == ord('q'):

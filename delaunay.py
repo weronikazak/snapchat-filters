@@ -29,13 +29,14 @@ def delaunay_traingle(convexHull, points, frame):
     for t in triangles:
         A, B, C = (t[0], t[1]), (t[2], t[3]), (t[4], t[5])
 
-        id_triangles = []
+        # id_triangles = []
 
         # if rect_contains(r, A) and rect_contains(r, B) and rect_contains(r, C):
         cv2.line(frame, A, B, (255, 255, 255), 1, cv2.LINE_AA, 0)
         cv2.line(frame, B, C, (255, 255, 255), 1, cv2.LINE_AA, 0)
         cv2.line(frame, A, C, (255, 255, 255), 1, cv2.LINE_AA, 0)
-        id_triangles.append([A, B, C])
+        #     triangle = [A, B, C]
+        #     id_triangles.append(triangle)
     return frame
 
 
