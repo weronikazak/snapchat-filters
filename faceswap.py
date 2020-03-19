@@ -1,20 +1,35 @@
 import dlib
 import cv2
 import numpy as np
+from imutils import face_utils
 
-# img2 = cv2.imread("jim_carrey.jpg", 0)
-
-jaw = [0, 17]
-r_eyebrow, l_eyebrow = [18, 22], [23, 27]
-nose = [28, 36]
-r_eye, l_eye = [37, 42], [43, 48]
-mouth = [49, 68]
 
 p = "shape_predictor_68_face_landmarks.dat"
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(p)
 
 camera = cv2.VideoCapture(0)
+
+# -----------
+# FIRST IMAGE
+# -----------
+
+img2 = cv2.imread("images/woman.jpg")
+gray_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+mask_img2 = np.zeros(gray_img2.shape, gray_img2.dtype)
+
+rects = detector(gray_img2, 0)
+for rect in rects:
+    shape = predictor(gray_img2, rect)
+    shape = face_utils.shape_to_np(shape)
+
+    convex2 = cv2.convexHull(shape)
+    cv2.fillPoly(mask_img2, [convex2], 255)
+    face1 = cv2.bitwise_and(img2, img2, mask=mask)
+
+    delaunay_traingle(convex2, shape, )
+
+#------------
 
 def delaunay_traingle(convexHull, points, frame):
     rect = cv2.boundingRect(convexHull)
@@ -27,11 +42,10 @@ def delaunay_traingle(convexHull, points, frame):
 
 
     for t in triangles:
-        A, B, C = (t[0], t[1]), (t[2], t[3]), (t[4], t[5])
+        A, B, C = (t[0], t[1]), (t[2], t[3]), (t[4], t[5]) # xs and ys of main points
 
         id_triangles = []
 
-        # if rect_contains(r, A) and rect_contains(r, B) and rect_contains(r, C):
         cv2.line(frame, A, B, (255, 255, 255), 1, cv2.LINE_AA, 0)
         cv2.line(frame, B, C, (255, 255, 255), 1, cv2.LINE_AA, 0)
         cv2.line(frame, A, C, (255, 255, 255), 1, cv2.LINE_AA, 0)
