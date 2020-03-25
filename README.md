@@ -17,6 +17,7 @@ The filters:
 - disproportion wave (*...*)
 - exaggerated mounth and eyes(*exgr.py*)
 - eyes colour change (*eyecolor.py*)
+- eyes glitch (*eyesglitch.py*)
 ---------------------------
 
 ## Facial landmarks:

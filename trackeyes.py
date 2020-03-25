@@ -13,7 +13,6 @@ predictor = dlib.shape_predictor(p)
 
 colours = ["blue", "red", "black", "brown", "green", "purple", "vampire"]
 eye_lens = cv2.imread("images/lenses/" + random.choice(colours) + ".png")
-lens_choice = random.choice(colours)
 
 offset = 2
 
@@ -35,18 +34,9 @@ def detect_keypoints(img):
     # thresh = cv2.dilate(thresh, None, iterations=8) #2
     thresh = cv2.medianBlur(thresh, 5) #3
 
-    M = cv2.moments(thresh)
+    keypoints = detectorB.detect(thresh)
 
-    try:
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-    except:
-        cX, cY = 0, 0
-
-    return (cX, cY)
-
-def prepare_lenses():
-    lens =  cv2.imread("images/lenses/" + colours[lens_choice] + ".png")
+    return keypoints
 
 
 while True:
@@ -82,21 +72,17 @@ while True:
         center_ry = rx + int(rw / 2)
         center_rx = ry + int(rh / 2)
 
-        center_left = detect_keypoints(l_eye)
-        center_right = detect_keypoints(r_eye)
+        keypoints_left = detect_keypoints(l_eye)
+        keypoints_right = detect_keypoints(r_eye)
 
-        eye_size = int(lh*0.5)
+        l_eye = cv2.drawKeypoints(l_eye, keypoints_left, l_eye, (0, 255, 0), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+        r_eye = cv2.drawKeypoints(r_eye, keypoints_right, r_eye, (0, 255, 0), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-        l_eye = cv2.circle(l_eye, center_left, eye_size, (0, 255, 0), -1)
-        r_eye = cv2.circle(r_eye, center_right, eye_size, (0, 255, 0), -1)
-        
         frame[ly-offset:ly+lh+offset, lx+offset:lx-offset+lw] = l_eye
         frame[ry-offset:ry+rh+offset, rx+offset:rx-offset+rw] = r_eye
 
 
     cv2.imshow("frame", frame)
-    # cv2.imshow("mask", l_eye)
-    cv2.imshow("r_eye", r_eye)
 
     if cv2.waitKey(20) & 0xFF == ord("q"):
         break
