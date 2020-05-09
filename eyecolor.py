@@ -45,8 +45,6 @@ def detect_keypoints(img):
 
     return (cX, cY)
 
-def prepare_lenses():
-    lens =  cv2.imread("images/lenses/" + colours[lens_choice] + ".png")
 
 
 while True:
@@ -62,6 +60,8 @@ while True:
     
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     rects = detector(gray, 0)
+    lens =  cv2.imread("images/lenses/" + lens_choice + ".png", -1)
+
 
     for rect in rects:
         shape = predictor(gray, rect)
@@ -77,26 +77,42 @@ while True:
         l_eye = frame[ly-offset:ly+lh+offset, lx+offset:lx-offset+lw]
         r_eye = frame[ry-offset:ry+rh+offset, rx+offset:rx-offset+rw]
 
-        center_ly = lx + int(lw / 2)
-        center_lx = ly + int(lh / 2)
-        center_ry = rx + int(rw / 2)
-        center_rx = ry + int(rh / 2)
-
         center_left = detect_keypoints(l_eye)
         center_right = detect_keypoints(r_eye)
 
-        eye_size = int(lh*0.5)
+        eye_size = int(lh*0.4)
 
-        l_eye = cv2.circle(l_eye, center_left, eye_size, (0, 255, 0), -1)
-        r_eye = cv2.circle(r_eye, center_right, eye_size, (0, 255, 0), -1)
+        lens = cv2.resize(lens, (eye_size, eye_size), interpolation = cv2.INTER_AREA)
+
+        alpha_s = lens[:, :, 3] / 255.0
+        alpha_l = 1.0 - alpha_s
+
+        half_eye_size = int(eye_size/2)
+
+        x1 = center_left[0] - half_eye_size
+        x2 = center_left[0] + half_eye_size
+        y1 = center_left[1] + half_eye_size
+        y2 = center_left[1] - half_eye_size
+
+        print(x1, x2, y1, y2)
+
+        l_eye = cv2.addWeighted(l_eye, 0.4, lens, 0.6, 0)
+
+        # for c in range(0, 3):
+        #     l_eye[y1:y2, x1:x2, c] = (alpha_s * lens[:, :, c] + 
+        #                             alpha_l * l_eye[y1:y2, x1:x2, c])
+
+
+        # l_eye = cv2.circle(l_eye, center_left, eye_size, (0, 255, 0), -1)
+        # r_eye = cv2.circle(r_eye, center_right, eye_size, (0, 255, 0), -1)
         
         frame[ly-offset:ly+lh+offset, lx+offset:lx-offset+lw] = l_eye
-        frame[ry-offset:ry+rh+offset, rx+offset:rx-offset+rw] = r_eye
+        # frame[ry-offset:ry+rh+offset, rx+offset:rx-offset+rw] = r_eye
 
 
     cv2.imshow("frame", frame)
     # cv2.imshow("mask", l_eye)
-    cv2.imshow("r_eye", r_eye)
+    cv2.imshow("r_eye", lens)
 
     if cv2.waitKey(20) & 0xFF == ord("q"):
         break
