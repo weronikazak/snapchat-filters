@@ -16,6 +16,7 @@ predictor = dlib.shape_predictor(p)
 
 camera = cv2.VideoCapture(0)
 
+
 def delaunay_traingle(convexHull, points, frame):
     rect = cv2.boundingRect(convexHull)
 
