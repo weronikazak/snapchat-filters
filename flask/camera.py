@@ -367,6 +367,22 @@ class Camera(object):
 		return self.return_jpg(canny)
 
 
+	# ------------
+	#    MIRRORS
+	# ------------
+	def effect_mirror(self):
+		ret, frame = self.camera.read()
+
+		split = frame.shape[1] // 2
+		one_half = frame[:, :split, :]
+		sec_half = cv2.flip(one_half, 1)
+
+		frame = np.hstack((one_half, sec_half))
+
+		return self.return_jpg(frame)
+
+
+
 # ---------------------
 # ADDITIONAL FUNCTIONS
 # ---------------------
