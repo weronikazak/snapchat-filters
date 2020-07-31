@@ -10,6 +10,7 @@ class Camera(object):
 		p = "../data/shape_predictor_68_face_landmarks.dat"
 		self.detector = dlib.get_frontal_face_detector()
 		self.predictor = dlib.shape_predictor(p)
+		self.effect = "contours"
 
 
 	def __del__(self):
@@ -21,65 +22,178 @@ class Camera(object):
 		return jpeg.tobytes()
 
 
+
+	def return_effect(self):
+		if self.effect == "contours":
+			frame = self.effect_canny()
+
+		elif self.effect == "baby":
+			frame = self.effect_baby_face()
+
+		elif self.effect == "blurr":
+			frame = self.effect_bluring_face()
+
+		elif self.effect == "cartoon":
+			frame = self.effect_cartoon()
+
+		elif self.effect == "doggy":	
+			frame = self.effect_dog_face()
+
+		elif self.effect == "large":	
+			frame = self.effect_enlarged()
+
+		elif self.effect == "mirrors":	
+			frame = self.effect_mirror()
+
+		elif self.effect == "triangle":	
+			frame = self.effect_delaunay_triangle()
+
+		elif self.effect == "glasses":	
+			frame = self.effect_glasses()
+
+		return frame
+
+
+
 	# ---------------
 	#    BABY FACE
 	# ---------------
 	def effect_baby_face(self):
-	    ret, frame = self.camera.read()
-	    if not ret:
-	    	return False
+		ret, frame = self.camera.read()
+		if not ret:
+			return False
+		offset = 4
+		scale = 1.3
 
-	    offset = 4
-	    scale = 1.3
+		frame_2 = frame.copy()
+		mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		mask = np.zeros(frame.shape, frame.dtype)
 
-	    frame = cv2.flip(frame, 1)
+		eye_mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		eye_mask = np.zeros(frame.shape, frame.dtype)
 
-	    frame_2 = frame.copy()
-	    mask =frame.copy()
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		rects = self.detector(gray, 0)
 
-	    eye_mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	    eye_mask = np.zeros(frame.shape, frame.dtype)
+		for rect in rects:
+			shape = self.predictor(gray, rect)
+			shape = face_utils.shape_to_np(shape)
 
-	    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	    rects = self.detector(gray, 0)
+			l_eye, r_eye = shape[36:42], shape[42:48]
 
-	    for rect in rects:
-	        shape = self.predictor(gray, rect)
-	        shape = face_utils.shape_to_np(shape)
+			(lx, ly, lw, lh) = cv2.boundingRect(l_eye)
+			(rx, ry, rw, rh) = cv2.boundingRect(r_eye)
 
-	        l_eye, r_eye = shape[36:42], shape[42:48]
+			l_eye = frame[ly-offset:ly+lh+offset, lx-offset:lx+lw+offset]
+			r_eye = frame[ry-offset:ry+rh+offset, rx-offset:rx+rw+offset]
 
-	        (lx, ly, lw, lh) = cv2.boundingRect(l_eye)
-	        (rx, ry, rw, rh) = cv2.boundingRect(r_eye)
+			center_ly = lx + int(lw / 2)
+			center_lx = ly + int(lh / 2) + 20
+			center_ry = rx + int(rw / 2)
+			center_rx = ry + int(rh / 2) + 20
 
-	        l_eye = frame[ly-offset:ly+lh+offset, lx-offset:lx+lw+offset]
-	        r_eye = frame[ry-offset:ry+rh+offset, rx-offset:rx+rw+offset]
+			mouth = shape[48:69]
 
-	        center_ly = lx + int(lw / 2)
-	        center_lx = ly + int(lh / 2)
-	        center_ry = rx + int(rw / 2)
-	        center_rx = ry + int(rh / 2)
+			(mx, my, mw, mh) = cv2.boundingRect(mouth)
+			mouth = frame[my-offset:my+mh+offset, mx-offset:mx+mw+offset]
 
-	        ly_scaled = int((l_eye.shape[1]*scale)/2)
-	        lx_scaled = int((l_eye.shape[0]*scale)/2)
-	        ry_scaled = int((r_eye.shape[1]*scale)/2)
-	        rx_scaled = int((r_eye.shape[0]*scale)/2)
+			center_my = mx + int(mw / 2)
+			center_mx = my + int(mh / 2)
 
-	        l_eye = cv2.resize(l_eye, (ly_scaled*2, lx_scaled*2), interpolation = cv2.INTER_AREA)
-	        r_eye = cv2.resize(r_eye, (ry_scaled*2, rx_scaled*2), interpolation = cv2.INTER_AREA)
+			ly_scaled = int((l_eye.shape[1]*scale)/2)
+			lx_scaled = int((l_eye.shape[0]*scale)/2)
+			ry_scaled = int((r_eye.shape[1]*scale)/2)
+			rx_scaled = int((r_eye.shape[0]*scale)/2)
 
-	        frame[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = l_eye
-	        mask[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = 255
-	        frame[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = r_eye
-	        mask[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = 255
+			l_eye = cv2.resize(l_eye, (ly_scaled*2, lx_scaled*2), interpolation = cv2.INTER_AREA)
+			r_eye = cv2.resize(r_eye, (ry_scaled*2, rx_scaled*2), interpolation = cv2.INTER_AREA)
 
-	        final_center_x = int(np.mean([center_lx, center_rx]))
-	        final_center_y = int(np.mean([center_ly, center_ry]))
+			frame[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = l_eye
+			mask[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = 255
+			frame[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = r_eye
+			mask[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = 255
 
-	        out = cv2.seamlessClone(frame, frame_2, eye_mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
-	    return self.return_jpg(out)
-	    
+			final_center_x = int(np.mean([center_lx, center_rx]))
+			final_center_y = int(np.mean([center_ly, center_ry]))
 
+			frame = cv2.seamlessClone(frame, frame_2, mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
+
+		return self.return_jpg(frame)
+
+
+	# ------------------
+	#    ENLARGED EYES
+	# ------------------
+	def effect_enlarged(self):
+		offset = 4
+		scale = 2
+		ret, frame = self.camera.read()
+		if not ret:
+			return False
+		frame_2 = frame.copy()
+
+		mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		mask = np.zeros(frame.shape, frame.dtype)
+
+		l_eye, r_eye = 0, 0
+
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+		rects = self.detector(gray, 0)
+
+		for rect in rects:
+			shape = self.predictor(gray, rect)
+			shape = face_utils.shape_to_np(shape)
+
+			l_eye, r_eye = shape[36:42], shape[42:48]
+
+			(lx, ly, lw, lh) = cv2.boundingRect(l_eye)
+			(rx, ry, rw, rh) = cv2.boundingRect(r_eye)
+
+			l_eye = frame[ly-offset:ly+lh+offset, lx-offset:lx+lw+offset]
+			r_eye = frame[ry-offset:ry+rh+offset, rx-offset:rx+rw+offset]
+
+			center_ly = lx + int(lw / 2)
+			center_lx = ly + int(lh / 2) + 20
+			center_ry = rx + int(rw / 2)
+			center_rx = ry + int(rh / 2) + 20
+
+			mouth = shape[48:69]
+
+			(mx, my, mw, mh) = cv2.boundingRect(mouth)
+			mouth = frame[my-offset:my+mh+offset, mx-offset:mx+mw+offset]
+
+			center_my = mx + int(mw / 2)
+			center_mx = my + int(mh / 2)
+
+			ly_scaled = int((l_eye.shape[1]*1.7)/2)
+			lx_scaled = int((l_eye.shape[0]*1.7)/2)
+			ry_scaled = int((r_eye.shape[1]*1.7)/2)
+			rx_scaled = int((r_eye.shape[0]*1.7)/2)
+
+			l_eye = cv2.resize(l_eye, (ly_scaled*2, lx_scaled*2), interpolation = cv2.INTER_AREA)
+			r_eye = cv2.resize(r_eye, (ry_scaled*2, rx_scaled*2), interpolation = cv2.INTER_AREA)
+
+			my_scaled = int((mouth.shape[1]*scale)/2)
+			mx_scaled = int((mouth.shape[0]*scale)/2)
+
+			mouth = cv2.resize(mouth, (my_scaled*2, mx_scaled*2), interpolation = cv2.INTER_AREA)
+
+			frame[center_mx-mx_scaled:center_mx+mx_scaled, center_my-my_scaled:center_my+my_scaled] = mouth
+			mask[center_mx-mx_scaled:center_mx+mx_scaled, center_my-my_scaled:center_my+my_scaled] = 255
+
+			frame[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = l_eye
+			mask[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = 255
+			frame[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = r_eye
+			mask[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = 255
+
+			final_center_x = int(np.mean([center_lx, center_mx, center_rx]))
+			final_center_y = int(np.mean([center_ly, center_my, center_ry]))
+
+			frame = cv2.seamlessClone(frame, frame_2, mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
+
+		return self.return_jpg(frame)
+
+	
 	# ------------------
 	#    BLURRING FACE
 	# ------------------
@@ -206,24 +320,14 @@ class Camera(object):
 		return self.return_jpg(frame)
 
 
-	# ------------------
-	#    ENLARGED EYES
-	# ------------------
-	def effect_enlarged(self):
-		offset = 4
-		scale = 2
+	# -----------------
+	#    FUNNY GLASSES
+	# -----------------
+	def effect_glasses(self):
 		ret, frame = self.camera.read()
 		if not ret:
 			return False
-
-		frame = cv2.flip(frame, 1)
-
-		frame_2 = frame.copy()
-
-		mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-		mask = np.zeros(frame.shape, frame.dtype)
-
-		l_eye, r_eye = 0, 0
+		glasses = cv2.imread("../images/glasses.png", -1)
 
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		rects = self.detector(gray, 0)
@@ -232,105 +336,29 @@ class Camera(object):
 			shape = self.predictor(gray, rect)
 			shape = face_utils.shape_to_np(shape)
 
-			l_eye, r_eye = shape[36:42], shape[42:48]
+		glasses_width = int(abs(shape[36][0] - shape[32][0]) * 4)
+		glasses_height = int(glasses_width * 0.7)
 
-			(lx, ly, lw, lh) = cv2.boundingRect(l_eye)
-			(rx, ry, rw, rh) = cv2.boundingRect(r_eye)
+		(glasses_x, glasses_y) = shape[30]
+		glasses_y -= 20
 
-			l_eye = frame[ly-offset:ly+lh+offset, lx-offset:lx+lw+offset]
-			r_eye = frame[ry-offset:ry+rh+offset, rx-offset:rx+rw+offset]
+		half_width = int(glasses_width/2.0)
+		half_height = int(glasses_height/2.0)
 
-			center_ly = lx + int(lw / 2)
-			center_lx = ly + int(lh / 2)
-			center_ry = rx + int(rw / 2)
-			center_rx = ry + int(rh / 2)
+		y1, y2 = glasses_y - half_height, glasses_y + half_height
+		x1, x2 = glasses_x - half_width, glasses_x + half_width
 
-			mouth = shape[48:69]
+		glasses = cv2.resize(glasses, (half_width*2, half_height*2), interpolation = cv2.INTER_AREA)
 
-			(mx, my, mw, mh) = cv2.boundingRect(mouth)
-			mouth = frame[my-offset:my+mh+offset, mx-offset:mx+mw+offset]
+		alpha_s = glasses[:, :, 3] / 255.0
+		alpha_l = 1.0 - alpha_s
 
-			center_my = mx + int(mw / 2)
-			center_mx = my + int(mh / 2)
+		for c in range(0, 3):
+			frame[y1:y2, x1:x2, c] = (alpha_s * glasses[:, :, c] + 
+		                            alpha_l * frame[y1:y2, x1:x2, c])
 
-			ly_scaled = int((l_eye.shape[1]*scale)/2)
-			lx_scaled = int((l_eye.shape[0]*scale)/2)
-			ry_scaled = int((r_eye.shape[1]*scale)/2)
-			rx_scaled = int((r_eye.shape[0]*scale)/2)
-
-			l_eye = cv2.resize(l_eye, (ly_scaled*2, lx_scaled*2), interpolation = cv2.INTER_AREA)
-			r_eye = cv2.resize(r_eye, (ry_scaled*2, rx_scaled*2), interpolation = cv2.INTER_AREA)
-
-			my_scaled = int((mouth.shape[1]*scale)/2)
-			mx_scaled = int((mouth.shape[0]*scale)/2)
-
-			mouth = cv2.resize(mouth, (my_scaled*2, mx_scaled*2), interpolation = cv2.INTER_AREA)
-
-			frame[center_mx-mx_scaled:center_mx+mx_scaled, center_my-my_scaled:center_my+my_scaled] = mouth
-			mask[center_mx-mx_scaled:center_mx+mx_scaled, center_my-my_scaled:center_my+my_scaled] = 255
-
-			frame[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = l_eye
-			mask[center_lx-lx_scaled:center_lx+lx_scaled, center_ly-ly_scaled:center_ly+ly_scaled] = 255
-			frame[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = r_eye
-			mask[center_rx-rx_scaled:center_rx+rx_scaled, center_ry-ry_scaled:center_ry+ry_scaled] = 255
-
-			final_center_x = int(np.mean([center_lx, center_mx, center_rx]))
-			final_center_y = int(np.mean([center_ly, center_my, center_ry]))
-
-			frame = cv2.seamlessClone(frame, frame_2, mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
 
 		return self.return_jpg(frame)
-
-	# ----------------------
-	#    GLITCHING EYES
-	# ----------------------
-	# def effect_glitching(self):
-	# 	ret, frame = self.camera.read()
-	# 	if not ret:
-	# 		return False
-			
-	# 	EYES_LENGTH = 10
-
-	# 	eyelist = []
-	# 	eye_layer = np.zeros(frame.shape, frame.dtype)
-	# 	eye_mask = cv2.cvtColor(eye_layer, cv2.COLOR_BGR2GRAY)
-
-	# 	translated = np.zeros(frame.shape, frame.dtype)
-	# 	translated_mask = eye_mask.copy()
-
-	# 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-	# 	rects = self.detector(gray, 0)
-
-	# 	for rect in rects:
-	# 		shape = self.predictor(gray, rect)
-	# 		shape = face_utils.shape_to_np(shape)
-
-	# 		l_eye, r_eye = shape[36:42], shape[42:48]
-
-	# 		cv2.fillPoly(eye_mask, [l_eye], 255)
-	# 		cv2.fillPoly(eye_mask, [r_eye], 255)
-
-	# 		eye_layer = cv2.bitwise_and(frame, frame, mask=eye_mask)
-
-	# 		(x, y, w, h) = cv2.boundingRect(eye_mask)
-
-	# 		if len(eyelist) >= EYES_LENGTH:
-	# 			eyelist.pop(0)  
-	# 		eyelist.append([x, y])
-
-	# 		translated = 0
-	# 		for i in reversed(list(eyelist)):
-	# 			eye = translate(eye_layer, i[0] - x, i[1] - y)
-	# 			eye_m = translate(eye_mask, i[0] - x, i[1] - y)
-
-	# 			translated_mask = np.maximum(translated_mask, eye_m)
-	# 			translated = cv2.bitwise_and(translated, translated, mask=255 - eye_m)
-	# 			translated += eye
-
-	# 		frame = cv2.bitwise_and(frame, frame, mask=255 - translated_mask)
-	# 		frame += translated
-
-	# 	return self.return_jpg(frame)
 
 
 	# ----------------------

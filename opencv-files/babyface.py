@@ -5,18 +5,21 @@ from imutils import face_utils
 
 camera = cv2.VideoCapture(0)
 
-p = "data/shape_predictor_68_face_landmarks.dat"
+p = "../data/shape_predictor_68_face_landmarks.dat"
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(p)
 
 offset = 4
 scale = 1.3
 
+_,  out = camera.read()
+
 
 while True:
     ret, frame = camera.read()
     frame = cv2.flip(frame, 1)
-
+    mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    mask = np.zeros(frame.shape, frame.dtype)
     frame_2 = frame.copy()
 
     eye_mask = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -66,12 +69,10 @@ while True:
         final_center_x = int(np.mean([center_lx, center_rx]))
         final_center_y = int(np.mean([center_ly, center_ry]))
 
-        out = cv2.seamlessClone(frame, frame_2, eye_mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
+        out = cv2.seamlessClone(frame_2, frame, eye_mask, (final_center_y, final_center_x), cv2.NORMAL_CLONE)
 
         
-    cv2.imshow('frame', frame)
-    cv2.imshow('eye', out)
-    
+    cv2.imshow('frame', frame)    
 
     if cv2.waitKey(20) & 0xFF == ord('q'):
         break
