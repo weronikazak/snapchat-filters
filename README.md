@@ -16,10 +16,10 @@ The dlib's facial landmarks indexes cheat sheet I used to detect specific parts 
 ## Examples:
 
 <div style="float:left">
-  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/dog.gif" width=460>
-  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/big.gif" width=460>
-  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/blur.gif" width=460>
-  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/glass.gif" width=460>
+  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/dog.gif" width=415>
+  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/big.gif" width=415>
+  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/blur.gif" width=415>
+  <img src="https://github.com/weronikazak/face-filters/blob/master/examples/glass.gif" width=415>
 </div>
 
 
