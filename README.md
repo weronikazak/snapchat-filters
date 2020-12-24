@@ -24,4 +24,4 @@ The dlib's facial landmarks indexes cheat sheet I used to detect specific parts 
 
 
 
-**Find more examples [here](https://github.com/weronikazak/Yet-Another-OCR/tree/master/examples)**
+**Find more examples [here](https://github.com/weronikazak/face-filters/tree/master/examples)**
